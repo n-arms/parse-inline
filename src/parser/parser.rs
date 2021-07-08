@@ -1,4 +1,5 @@
 use std::fmt;
+use crate::parser::and_then::AndThen;
 
 pub struct ParserError {
     message: String
@@ -20,6 +21,22 @@ impl fmt::Display for ParserError {
 
 pub trait Parser<A> {
     fn run<'a>(&self, text: &'a [char]) -> (&'a [char], Result<A, ParserError>);
+    /*
+    fn and_then<B, P: Parser<B>>(&self, other: impl Fn(A) -> P) -> P 
+    where
+        Self: Sized
+    {
+        AndThen::new(self, other)
+    }*/
+    fn and_then<B, P2, F>(&self, other: F) -> AndThen<&Self, F, A>
+    where
+        P2: Parser<B>,
+        F: Fn(A) -> P2,
+        Self: Sized
+        
+    {
+        AndThen::new(self, other)
+    }
 }
 
 pub struct Any;
