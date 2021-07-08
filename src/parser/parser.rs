@@ -1,6 +1,8 @@
 use std::fmt;
 use crate::parser::and_then::AndThen;
 use crate::parser::or_else::OrElse;
+use crate::parser::many::Many;
+use crate::parser::map::Map;
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct ParserError {
@@ -32,11 +34,27 @@ pub trait Parser<A> {
     {
         AndThen::new(self, other)
     }
-    fn or_else<P2: Parser<A>>(&self, other: P2) -> OrElse<&Self, P2> {
+    fn or_else<P2: Parser<A>>(self, other: P2) -> OrElse<Self, P2> 
+    where
+        Self: Sized
+    {
         OrElse::new(self, other)
+    }
+    fn many(self) -> Many<Self> 
+    where
+        Self: Sized
+    {
+        Many::new(self)
+    }
+    fn map<B, F: Fn(A) -> B>(self, f: F) -> Map<Self, F, A> 
+    where
+        Self: Sized
+    {
+        Map::new(self, f)
     }
 }
 
+#[derive(Copy, Clone)]
 pub struct Any;
 impl Parser<char> for Any {
     fn run<'a>(&self, text: &'a [char]) -> (&'a [char], Result<char, ParserError>) {
@@ -48,6 +66,7 @@ impl Parser<char> for Any {
     }
 }
 
+#[derive(Copy, Clone)]
 pub struct Eof;
 impl Parser<()> for Eof {
     fn run<'a>(&self, text: &'a [char]) -> (&'a [char], Result<(), ParserError>) {

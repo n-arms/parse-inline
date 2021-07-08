@@ -1,6 +1,8 @@
 use crate::parser::parser::{Parser, ParserError};
 
 use std::marker::PhantomData;
+
+#[derive(Copy, Clone)]
 pub struct AndThen<P, F, A> {
     p: P,
     f: F,

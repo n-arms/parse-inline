@@ -1,5 +1,6 @@
 use crate::parser::parser::{Parser, ParserError};
 
+#[derive(Copy, Clone)]
 pub struct OrElse<P1, P2> {
     p1: P1,
     p2: P2,
