@@ -2,6 +2,7 @@ use std::fmt;
 use crate::parser::and_then::AndThen;
 use crate::parser::or_else::OrElse;
 
+#[derive(Debug, Eq, PartialEq)]
 pub struct ParserError {
     message: String
 }
@@ -22,7 +23,7 @@ impl fmt::Display for ParserError {
 
 pub trait Parser<A> {
     fn run<'a>(&self, text: &'a [char]) -> (&'a [char], Result<A, ParserError>);
-    fn and_then<B, P2, F>(&self, other: F) -> AndThen<&Self, F, A>
+    fn and_then<B, P2, F>(self, other: F) -> AndThen<Self, F, A>
     where
         P2: Parser<B>,
         F: Fn(A) -> P2,
@@ -55,5 +56,40 @@ impl Parser<()> for Eof {
         } else {
             (text, Err (ParserError::new(String::from("remaining chars while parsing eof"))))
         }
+    }
+}
+
+#[allow(dead_code)]
+pub fn should_fail<A: std::fmt::Debug>(p: impl Parser<A>, text: &str) {
+    match p.run(text.chars().collect::<Vec<_>>().as_slice()) {
+        (_, Ok(o)) => panic!("parser did not fail, succeeded with result {:?}", o),
+        _ => ()
+    }
+}
+
+#[allow(dead_code)]
+pub fn succeed_with<A: std::fmt::Debug + std::cmp::Eq>(p: impl Parser<A>, text: &str, rest: &str, out: A) {
+    match p.run(text.chars().collect::<Vec<_>>().as_slice()) {
+        (text2, Ok(o)) => assert!((rest.chars().collect::<Vec<_>>().as_slice() == text2) && (o == out)),
+        (_, Err(e)) => panic!("parser failed with error {:?}", e)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+
+    #[test]
+    fn any() {
+        succeed_with(Any{}, "123", "23", '1');
+        succeed_with(Any{}, "1", "", '1');
+        should_fail(Any{}, "");
+    }
+
+    #[test]
+    fn eof() {
+        succeed_with(Eof{}, "", "", ());
+        should_fail(Eof{}, "1");
     }
 }

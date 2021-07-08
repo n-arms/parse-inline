@@ -25,3 +25,21 @@ impl<A, B, P1: Parser<A>, P2: Parser<B>, F: Fn(A) -> P2> Parser<B> for AndThen<P
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::parser::parser::*;
+
+    #[test]
+    fn and_then() {
+        succeed_with(Any{}.and_then(|_| Any{}), "123", "3", '2');
+        should_fail(Any{}.and_then(|_| Any{}), "1");
+
+        succeed_with(Any{}.and_then(|_| Eof{}), "1", "", ());
+        should_fail(Any{}.and_then(|_| Eof{}), "12");
+
+        succeed_with(Eof{}.and_then(|_| Eof{}), "", "", ());
+        should_fail(Eof{}.and_then(|_| Eof{}), "1");
+
+    }
+}
