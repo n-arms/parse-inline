@@ -2,6 +2,7 @@ use std::fmt;
 use crate::parser::and_then::AndThen;
 use crate::parser::or_else::OrElse;
 use crate::parser::many::Many;
+use crate::parser::many::Many1;
 use crate::parser::map::Map;
 
 #[derive(Debug, Eq, PartialEq)]
@@ -52,6 +53,12 @@ pub trait Parser<A> {
     {
         Map::new(self, f)
     }
+    fn many1(self) -> Many1<Self>
+    where
+        Self: Sized + Copy
+    {
+        Many1::new(self)
+    }
 }
 
 #[derive(Copy, Clone)]
@@ -89,7 +96,10 @@ pub fn should_fail<A: std::fmt::Debug>(p: impl Parser<A>, text: &str) {
 #[allow(dead_code)]
 pub fn succeed_with<A: std::fmt::Debug + std::cmp::Eq>(p: impl Parser<A>, text: &str, rest: &str, out: A) {
     match p.run(text.chars().collect::<Vec<_>>().as_slice()) {
-        (text2, Ok(o)) => assert!((rest.chars().collect::<Vec<_>>().as_slice() == text2) && (o == out)),
+        (text2, Ok(o)) => {
+            assert_eq!(rest.chars().collect::<Vec<_>>().as_slice(), text2);
+            assert_eq!(o, out);
+        },
         (_, Err(e)) => panic!("parser failed with error {:?}", e)
     }
 }
