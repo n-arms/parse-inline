@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use crate::generator::parser::expr::*;
 
 fn get<'a>(text: &'a [char]) -> (&'a [char], Option<char>) {
@@ -9,7 +10,7 @@ fn get<'a>(text: &'a [char]) -> (&'a [char], Option<char>) {
 }
 
 fn skip_whitespace<'a>(text: &'a [char]) -> &'a [char] {
-    if text[0] == ' ' || text[0] == '\n' {
+    if text.len() > 0 && (text[0] == ' ' || text[0] == '\n') {
         skip_whitespace(&text[1..])
     } else {
         text
@@ -25,19 +26,44 @@ pub fn parse_rule<'a>(text: &'a [char]) -> (&'a [char], Result<Rule, String>) {
 }
 
 pub fn parse_expr<'a>(text: &'a [char]) -> (&'a [char], Result<Expr, String>) {
-    todo!();
+    let (rest, na) = parse_not_or(text);
+    if let Ok(l) = na {
+        let rest2 = skip_whitespace(rest);
+        if rest2.len() > 0 && rest2[0] == '|' {
+            let (rest2, e2) = parse_expr(skip_whitespace(&rest2[1..]));
+            if let Ok(r) = e2 {
+                (rest2, Ok(Expr::Or(Box::new(l), Box::new(r))))
+            } else {
+                (rest, Ok(l))
+            }
+        } else {
+            (rest, Ok(l))
+        }
+    } else {
+        (text, Err(String::from("failed to parse not and for expr")))
+    }
 }
 
-
-pub fn parse_and<'a>(text: &'a [char]) -> (&'a [char], Result<(Expr, Expr), String>) {
-    todo!();
+pub fn parse_not_or<'a>(text: &'a [char]) -> (&'a [char], Result<Expr, String>) {
+    let (rest, e) = parse_literal(text);
+    if let Ok(no) = e {
+        let rest2 = skip_whitespace(rest);
+        let (rest2, e) = parse_not_or(rest2);
+        if let Ok(na) = e {
+            (rest2, Ok(Expr::And(Box::new(no), Box::new(na))))
+        } else {
+            (rest, Ok(no))
+        }
+    } else {
+        (text, Err(String::from("failed to parse literal for not and")))
+    }
 }
 
-pub fn parse_literal<'a>(text: &'a [char]) -> (&'a [char], Result<Literal, String>) {
+pub fn parse_literal<'a>(text: &'a [char]) -> (&'a [char], Result<Expr, String>) {
     match parse_non_term(text) {
-        (text, Ok(l)) => (text, Ok(Literal::NonTerm(l))),
+        (text, Ok(l)) => (text, Ok(Expr::Literal(Literal::NonTerm(l)))),
         _ => match parse_term(text) {
-            (text, Ok(l)) => (text, Ok(Literal::Term(l))),
+            (text, Ok(l)) => (text, Ok(Expr::Literal(Literal::Term(l)))),
             _ => (text, Err(String::from("failed to parse term or nonterm")))
         }
     }
@@ -80,6 +106,7 @@ pub fn parse_term<'a>(text: &'a [char]) -> (&'a [char], Result<String, String>) 
         _ => (text, Err(String::from("failed to parse closing \" in string")))
     }
 }
+
 
 #[cfg(test)]
 mod tests {
@@ -127,12 +154,11 @@ mod tests {
     }
 
     #[test]
-    fn literal() {
-        should_fail(parse_literal(&to_arr("\"Term")));
-        should_fail(parse_literal(&to_arr(" Term")));
-        should_fail(parse_literal(&to_arr("")));
-
-        succeed_with(parse_literal(&to_arr("NonTerm")), &to_arr(""), Literal::NonTerm(String::from("NonTerm")));
-        succeed_with(parse_literal(&to_arr("\"Term\"")), &to_arr(""), Literal::Term(String::from("Term")));
+    fn expr() {
+        match parse_expr(&to_arr("A B C | D E | F")) {
+            (_, Ok(e)) => pretty_print(0, e),
+            (_, Err(e)) => panic!("failed to parse with error {:?}", e)
+        }
+        panic!()
     }
 }
