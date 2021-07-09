@@ -1,19 +1,19 @@
-use crate::parser::parser::{Parser, ParserError};
+use crate::parser::parser::*;
+use crate::parser::chars::Chars;
 
-#[derive(Copy, Clone)]
-pub struct OrElse<P1, P2> {
-    p1: P1,
-    p2: P2,
+pub struct OrElse<'p, P1, P2> {
+    p1: &'p P1,
+    p2: &'p P2,
 }
 
-impl<P1, P2> OrElse<P1, P2> {
+impl<'p, P1, P2> OrElse<'p, P1, P2> {
     #[allow(dead_code)]
-    pub fn new(p1: P1, p2: P2) -> OrElse<P1, P2> {
+    pub fn new(p1: &'p P1, p2: &'p P2) -> OrElse<'p, P1, P2> {
         OrElse {p1, p2}
     }
 }
 
-impl<A, P1, P2> Parser<A> for OrElse<P1, P2> 
+impl<'p, A, P1, P2> Parser<A> for OrElse<'p, P1, P2> 
 where
     P1: Parser<A>,
     P2: Parser<A>
@@ -24,5 +24,17 @@ where
         } else {
             self.p2.run(text)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn or_else() {
+        let p1 = Chars::new(String::from("banana"));
+        let p2 = Chars::new(String::from("banan"));
+        succeed_with(&p1.or_else(&p2), "banana", "", String::from("banana"));
     }
 }
