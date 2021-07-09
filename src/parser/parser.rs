@@ -1,6 +1,7 @@
 use std::fmt;
 use crate::parser::or_else::OrElse;
 use crate::parser::many::Many;
+use crate::parser::and::And;
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct ParserError {
@@ -34,6 +35,12 @@ pub trait Parser<A> {
         Self: Sized
     {
         Many::new(self)
+    }
+    fn and<'p, B, P2: Parser<B>>(&'p self, other: &'p P2) -> And<'p, Self, P2> 
+    where
+        Self: Sized
+    {
+        And::new(self, other)
     }
 }
 

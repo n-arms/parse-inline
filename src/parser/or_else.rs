@@ -36,5 +36,7 @@ mod tests {
         let p1 = Chars::new(String::from("banana"));
         let p2 = Chars::new(String::from("banan"));
         succeed_with(&p1.or_else(&p2), "banana", "", String::from("banana"));
+        succeed_with(&p1.or_else(&p2), "banan", "", String::from("banan"));
+        should_fail(&p1.or_else(&p2), "bana");
     }
 }
