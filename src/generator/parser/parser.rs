@@ -113,7 +113,7 @@ mod tests {
     fn should_fail<A: Eq>(r: (&[char], Result<A, String>)) {
         match r {
             (_, Err(_)) => (),
-            (_, Ok(a)) => panic!("should fail didnt fail")
+            (_, Ok(_)) => panic!("should fail didnt fail")
         }
     }
     fn succeed_with<A: Eq + std::fmt::Debug>(r: (&[char], Result<A, String>), rest: &[char], out: A) {
@@ -155,10 +155,23 @@ mod tests {
 
     #[test]
     fn expr() {
-        match parse_expr(&to_arr("A B C | D E | F")) {
-            (_, Ok(e)) => pretty_print(0, e),
-            (_, Err(e)) => panic!("failed to parse with error {:?}", e)
-        }
-        panic!()
+        succeed_with(
+            parse_expr(&to_arr("A B | C")),
+            &to_arr(""),
+            Expr::Or(
+                Box::new(Expr::And(
+                        Box::new(Expr::Literal(Literal::NonTerm(String::from("A")))),
+                        Box::new(Expr::Literal(Literal::NonTerm(String::from("B")))))),
+                Box::new(Expr::Literal(Literal::NonTerm(String::from("C"))))));
+        succeed_with(
+            parse_expr(&to_arr("A B | C D")), 
+            &to_arr(""),
+            Expr::Or(
+                Box::new(Expr::And(
+                        Box::new(Expr::Literal(Literal::NonTerm(String::from("A")))),
+                        Box::new(Expr::Literal(Literal::NonTerm(String::from("B")))))),
+                Box::new(Expr::And(
+                        Box::new(Expr::Literal(Literal::NonTerm(String::from("C")))),
+                        Box::new(Expr::Literal(Literal::NonTerm(String::from("D"))))))));
     }
 }
